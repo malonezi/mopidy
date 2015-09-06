@@ -51,10 +51,12 @@ class M3UPlaylistsProvider(backend.PlaylistsProvider):
             if os.path.exists(path):
                 os.remove(path)
             else:
-                logger.warn('Trying to delete missing playlist file %s', path)
+                logger.warning(
+                    'Trying to delete missing playlist file %s', path)
             del self._playlists[uri]
+            logger.info('Deleted playlist %s', uri)
         else:
-            logger.warn('Trying to delete unknown playlist %s', uri)
+            logger.warning('Trying to delete unknown playlist %s', uri)
 
     def lookup(self, uri):
         return self._playlists.get(uri)
@@ -63,10 +65,10 @@ class M3UPlaylistsProvider(backend.PlaylistsProvider):
         playlists = {}
 
         encoding = sys.getfilesystemencoding()
-        for path in glob.glob(os.path.join(self._playlists_dir, b'*.m3u')):
+        for path in glob.glob(os.path.join(self._playlists_dir, b'*.m3u*')):
             relpath = os.path.basename(path)
             uri = translator.path_to_playlist_uri(relpath)
-            name = os.path.splitext(relpath)[0].decode(encoding)
+            name = os.path.splitext(relpath)[0].decode(encoding, 'replace')
             tracks = translator.parse_m3u(path)
             playlists[uri] = Playlist(uri=uri, name=name, tracks=tracks)
 

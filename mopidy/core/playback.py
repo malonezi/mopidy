@@ -207,6 +207,12 @@ class PlaybackController(object):
         if old_state == PlaybackState.PLAYING:
             self._play(on_error_step=on_error_step)
         elif old_state == PlaybackState.PAUSED:
+            # NOTE: this is just a quick hack to fix #1177 as this code has
+            # already been killed in the gapless branch.
+            backend = self._get_backend()
+            if backend:
+                backend.playback.prepare_change()
+                backend.playback.change_track(tl_track.track).get()
             self.pause()
 
     # TODO: this is not really end of track, this is on_need_next_track
@@ -342,8 +348,11 @@ class PlaybackController(object):
                     backend.playback.change_track(tl_track.track).get() and
                     backend.playback.play().get())
             except TypeError:
-                logger.error('%s needs to be updated to work with this '
-                             'version of Mopidy.', backend)
+                logger.error(
+                    '%s needs to be updated to work with this '
+                    'version of Mopidy.',
+                    backend.actor_ref.actor_class.__name__)
+                logger.debug('Backend exception', exc_info=True)
 
         if success:
             self.core.tracklist._mark_playing(tl_track)
@@ -393,7 +402,12 @@ class PlaybackController(object):
         :type time_position: int
         :rtype: :class:`True` if successful, else :class:`False`
         """
-        validation.check_integer(time_position, min=0)
+        validation.check_integer(time_position)
+
+        if time_position < 0:
+            logger.debug(
+                'Client seeked to negative position. Seeking to zero.')
+            time_position = 0
 
         if not self.core.tracklist.tracks:
             return False

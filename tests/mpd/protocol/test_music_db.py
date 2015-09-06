@@ -2,8 +2,10 @@ from __future__ import absolute_import, unicode_literals
 
 import unittest
 
+import mock
+
 from mopidy.models import Album, Artist, Playlist, Ref, SearchResult, Track
-from mopidy.mpd.protocol import music_db
+from mopidy.mpd.protocol import music_db, stored_playlists
 
 from tests.mpd import protocol
 
@@ -77,6 +79,16 @@ class MusicDatabaseHandlerTest(protocol.BaseTestCase):
         self.send_request('count "date" "2001"')
         self.assertInResponse('songs: 2')
         self.assertInResponse('playtime: 650')
+        self.assertInResponse('OK')
+
+    def test_count_with_track_length_none(self):
+        self.backend.library.dummy_find_exact_result = SearchResult(
+            tracks=[
+                Track(uri='dummy:b', date="2001", length=None),
+            ])
+        self.send_request('count "date" "2001"')
+        self.assertInResponse('songs: 1')
+        self.assertInResponse('playtime: 0')
         self.assertInResponse('OK')
 
     def test_findadd(self):
@@ -285,33 +297,41 @@ class MusicDatabaseHandlerTest(protocol.BaseTestCase):
         self.assertInResponse('directory: /dummy/a')
         self.assertInResponse('directory: /dummy/a [2]')
 
-    def test_lsinfo_without_path_returns_same_as_for_root(self):
-        last_modified = 1390942873222
+    def test_listfiles(self):
+        self.send_request('listfiles')
+        self.assertEqualResponse('ACK [0@0] {listfiles} Not implemented')
+
+    @mock.patch.object(stored_playlists, '_get_last_modified')
+    def test_lsinfo_without_path_returns_same_as_for_root(
+            self, last_modified_mock):
+        last_modified_mock.return_value = '2015-08-05T22:51:06Z'
         self.backend.playlists.set_dummy_playlists([
-            Playlist(name='a', uri='dummy:/a', last_modified=last_modified)])
+            Playlist(name='a', uri='dummy:/a')])
 
         response1 = self.send_request('lsinfo')
         response2 = self.send_request('lsinfo "/"')
         self.assertEqual(response1, response2)
 
-    def test_lsinfo_with_empty_path_returns_same_as_for_root(self):
-        last_modified = 1390942873222
+    @mock.patch.object(stored_playlists, '_get_last_modified')
+    def test_lsinfo_with_empty_path_returns_same_as_for_root(
+            self, last_modified_mock):
+        last_modified_mock.return_value = '2015-08-05T22:51:06Z'
         self.backend.playlists.set_dummy_playlists([
-            Playlist(name='a', uri='dummy:/a', last_modified=last_modified)])
+            Playlist(name='a', uri='dummy:/a')])
 
         response1 = self.send_request('lsinfo ""')
         response2 = self.send_request('lsinfo "/"')
         self.assertEqual(response1, response2)
 
-    def test_lsinfo_for_root_includes_playlists(self):
-        last_modified = 1390942873222
+    @mock.patch.object(stored_playlists, '_get_last_modified')
+    def test_lsinfo_for_root_includes_playlists(self, last_modified_mock):
+        last_modified_mock.return_value = '2015-08-05T22:51:06Z'
         self.backend.playlists.set_dummy_playlists([
-            Playlist(name='a', uri='dummy:/a', last_modified=last_modified)])
+            Playlist(name='a', uri='dummy:/a')])
 
         self.send_request('lsinfo "/"')
         self.assertInResponse('playlist: a')
-        # Date without milliseconds and with time zone information
-        self.assertInResponse('Last-Modified: 2014-01-28T21:01:13Z')
+        self.assertInResponse('Last-Modified: 2015-08-05T22:51:06Z')
         self.assertInResponse('OK')
 
     def test_lsinfo_for_root_includes_dirs_for_each_lib_with_content(self):
@@ -323,7 +343,10 @@ class MusicDatabaseHandlerTest(protocol.BaseTestCase):
         self.assertInResponse('directory: dummy')
         self.assertInResponse('OK')
 
-    def test_lsinfo_for_dir_with_and_without_leading_slash_is_the_same(self):
+    @mock.patch.object(stored_playlists, '_get_last_modified')
+    def test_lsinfo_for_dir_with_and_without_leading_slash_is_the_same(
+            self, last_modified_mock):
+        last_modified_mock.return_value = '2015-08-05T22:51:06Z'
         self.backend.library.dummy_browse_result = {
             'dummy:/': [Ref.track(uri='dummy:/a', name='a'),
                         Ref.directory(uri='dummy:/foo', name='foo')]}
@@ -332,7 +355,10 @@ class MusicDatabaseHandlerTest(protocol.BaseTestCase):
         response2 = self.send_request('lsinfo "/dummy"')
         self.assertEqual(response1, response2)
 
-    def test_lsinfo_for_dir_with_and_without_trailing_slash_is_the_same(self):
+    @mock.patch.object(stored_playlists, '_get_last_modified')
+    def test_lsinfo_for_dir_with_and_without_trailing_slash_is_the_same(
+            self, last_modified_mock):
+        last_modified_mock.return_value = '2015-08-05T22:51:06Z'
         self.backend.library.dummy_browse_result = {
             'dummy:/': [Ref.track(uri='dummy:/a', name='a'),
                         Ref.directory(uri='dummy:/foo', name='foo')]}
@@ -390,12 +416,11 @@ class MusicDatabaseHandlerTest(protocol.BaseTestCase):
         self.assertInResponse('OK')
 
     def test_lsinfo_for_root_returns_browse_result_before_playlists(self):
-        last_modified = 1390942873222
         self.backend.library.dummy_browse_result = {
             'dummy:/': [Ref.track(uri='dummy:/a', name='a'),
                         Ref.directory(uri='dummy:/foo', name='foo')]}
         self.backend.playlists.set_dummy_playlists([
-            Playlist(name='a', uri='dummy:/a', last_modified=last_modified)])
+            Playlist(name='a', uri='dummy:/a')])
 
         response = self.send_request('lsinfo "/"')
         self.assertLess(response.index('directory: dummy'),
@@ -635,6 +660,12 @@ class MusicDatabaseListTest(protocol.BaseTestCase):
     def test_list_foo_returns_ack(self):
         self.send_request('list "foo"')
         self.assertEqualResponse('ACK [2@0] {list} incorrect arguments')
+
+    # Track title
+
+    def test_list_title(self):
+        self.send_request('list "title"')
+        self.assertInResponse('OK')
 
     # Artist
 

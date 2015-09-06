@@ -183,10 +183,6 @@ def playlistfind(context, tag, needle):
         ``playlistfind {TAG} {NEEDLE}``
 
         Finds songs in the current playlist with strict matching.
-
-    *GMPC:*
-
-    - does not add quotes around the tag.
     """
     if tag == 'filename':
         tl_tracks = context.core.tracklist.filter({'uri': [needle]}).get()
@@ -260,7 +256,6 @@ def playlistsearch(context, tag, needle):
 
     *GMPC:*
 
-    - does not add quotes around the tag
     - uses ``filename`` and ``any`` as tags
     """
     raise exceptions.MpdNotImplemented  # TODO
@@ -324,6 +319,54 @@ def plchangesposid(context, version):
         return result
 
 
+@protocol.commands.add(
+    'prio', priority=protocol.UINT, position=protocol.RANGE)
+def prio(context, priority, position):
+    """
+    *musicpd.org, current playlist section:*
+
+        ``prio {PRIORITY} {START:END...}``
+
+        Set the priority of the specified songs. A higher priority means that
+        it will be played first when "random" mode is enabled.
+
+        A priority is an integer between 0 and 255. The default priority of new
+        songs is 0.
+    """
+    raise exceptions.MpdNotImplemented  # TODO
+
+
+@protocol.commands.add('prioid')
+def prioid(context, *args):
+    """
+    *musicpd.org, current playlist section:*
+
+        ``prioid {PRIORITY} {ID...}``
+
+        Same as prio, but address the songs with their id.
+    """
+    raise exceptions.MpdNotImplemented  # TODO
+
+
+@protocol.commands.add('rangeid', tlid=protocol.UINT, songrange=protocol.RANGE)
+def rangeid(context, tlid, songrange):
+    """
+    *musicpd.org, current playlist section:*
+
+        ``rangeid {ID} {START:END}``
+
+        Specifies the portion of the song that shall be played. START and END
+        are offsets in seconds (fractional seconds allowed); both are optional.
+        Omitting both (i.e. sending just ":") means "remove the range, play
+        everything". A song that is currently playing cannot be manipulated
+        this way.
+
+    .. versionadded:: 0.19
+        New in MPD protocol version 0.19
+    """
+    raise exceptions.MpdNotImplemented  # TODO
+
+
 @protocol.commands.add('shuffle', songrange=protocol.RANGE)
 def shuffle(context, songrange=None):
     """
@@ -383,39 +426,7 @@ def swapid(context, tlid1, tlid2):
     swap(context, position1, position2)
 
 
-# TODO: add at least reflection tests before adding NotImplemented version
-# @protocol.commands.add(
-#     'prio', priority=protocol.UINT, position=protocol.RANGE)
-def prio(context, priority, position):
-    """
-    *musicpd.org, current playlist section:*
-
-        ``prio {PRIORITY} {START:END...}``
-
-        Set the priority of the specified songs. A higher priority means that
-        it will be played first when "random" mode is enabled.
-
-        A priority is an integer between 0 and 255. The default priority of new
-        songs is 0.
-    """
-    pass
-
-
-# TODO: add at least reflection tests before adding NotImplemented version
-# @protocol.commands.add('prioid')
-def prioid(context, *args):
-    """
-    *musicpd.org, current playlist section:*
-
-        ``prioid {PRIORITY} {ID...}``
-
-        Same as prio, but address the songs with their id.
-    """
-    pass
-
-
-# TODO: add at least reflection tests before adding NotImplemented version
-# @protocol.commands.add('addtagid', tlid=protocol.UINT)
+@protocol.commands.add('addtagid', tlid=protocol.UINT)
 def addtagid(context, tlid, tag, value):
     """
     *musicpd.org, current playlist section:*
@@ -426,12 +437,14 @@ def addtagid(context, tlid, tag, value):
         for remote songs. This change is volatile: it may be overwritten by
         tags received from the server, and the data is gone when the song gets
         removed from the queue.
+
+    .. versionadded:: 0.19
+        New in MPD protocol version 0.19
     """
-    pass
+    raise exceptions.MpdNotImplemented  # TODO
 
 
-# TODO: add at least reflection tests before adding NotImplemented version
-# @protocol.commands.add('cleartagid', tlid=protocol.UINT)
+@protocol.commands.add('cleartagid', tlid=protocol.UINT)
 def cleartagid(context, tlid, tag):
     """
     *musicpd.org, current playlist section:*
@@ -441,5 +454,8 @@ def cleartagid(context, tlid, tag):
         Removes tags from the specified song. If TAG is not specified, then all
         tag values will be removed. Editing song tags is only possible for
         remote songs.
+
+    .. versionadded:: 0.19
+        New in MPD protocol version 0.19
     """
-    pass
+    raise exceptions.MpdNotImplemented  # TODO

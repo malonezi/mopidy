@@ -23,6 +23,7 @@ _SEARCH_MAPPING = {
     'track': 'track_no'}
 
 _LIST_MAPPING = {
+    'title': 'track',
     'album': 'album',
     'albumartist': 'albumartist',
     'artist': 'artist',
@@ -32,6 +33,7 @@ _LIST_MAPPING = {
     'performer': 'performer'}
 
 _LIST_NAME_MAPPING = {
+    'track': 'Title',
     'album': 'Album',
     'albumartist': 'AlbumArtist',
     'artist': 'Artist',
@@ -94,7 +96,6 @@ def count(context, *args):
 
     *GMPC:*
 
-    - does not add quotes around the tag argument.
     - use multiple tag-needle pairs to make more specific searches.
     """
     try:
@@ -105,7 +106,7 @@ def count(context, *args):
     result_tracks = _get_tracks(results)
     return [
         ('songs', len(result_tracks)),
-        ('playtime', sum(track.length for track in result_tracks) / 1000),
+        ('playtime', sum(t.length for t in result_tracks if t.length) / 1000),
     ]
 
 
@@ -123,13 +124,11 @@ def find(context, *args):
 
     *GMPC:*
 
-    - does not add quotes around the field argument.
     - also uses ``find album "[ALBUM]" artist "[ARTIST]"`` to list album
       tracks.
 
     *ncmpc:*
 
-    - does not add quotes around the field argument.
     - capitalizes the type argument.
 
     *ncmpcpp:*
@@ -253,21 +252,17 @@ def list_(context, *args):
                 Genre: Rock
                 OK
 
-    *GMPC:*
-
-    - does not add quotes around the field argument.
-
     *ncmpc:*
 
-    - does not add quotes around the field argument.
     - capitalizes the field argument.
     """
     params = list(args)
     if not params:
         raise exceptions.MpdArgError('incorrect arguments')
-    field = params.pop(0).lower()
 
-    if field not in _LIST_MAPPING:
+    field = params.pop(0).lower()
+    field = _LIST_MAPPING.get(field)
+    if field is None:
         raise exceptions.MpdArgError('incorrect arguments')
 
     query = None
@@ -346,6 +341,30 @@ def listallinfo(context, uri=None):
     return result
 
 
+@protocol.commands.add('listfiles')
+def listfiles(context, uri=None):
+    """
+    *musicpd.org, music database section:*
+
+        ``listfiles [URI]``
+
+        Lists the contents of the directory URI, including files are not
+        recognized by MPD. URI can be a path relative to the music directory or
+        an URI understood by one of the storage plugins. The response contains
+        at least one line for each directory entry with the prefix "file: " or
+        "directory: ", and may be followed by file attributes such as
+        "Last-Modified" and "size".
+
+        For example, "smb://SERVER" returns a list of all shares on the given
+        SMB/CIFS server; "nfs://servername/path" obtains a directory listing
+        from the NFS server.
+
+    .. versionadded:: 0.19
+        New in MPD protocol version 0.19
+    """
+    raise exceptions.MpdNotImplemented  # TODO
+
+
 @protocol.commands.add('lsinfo')
 def lsinfo(context, uri=None):
     """
@@ -402,7 +421,6 @@ def search(context, *args):
 
     *GMPC:*
 
-    - does not add quotes around the field argument.
     - uses the undocumented field ``any``.
     - searches for multiple words like this::
 
@@ -410,7 +428,6 @@ def search(context, *args):
 
     *ncmpc:*
 
-    - does not add quotes around the field argument.
     - capitalizes the field argument.
 
     *ncmpcpp:*

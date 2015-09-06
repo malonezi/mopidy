@@ -141,7 +141,10 @@ class JsonLibrary(local.Library):
             return []
 
     def get_distinct(self, field, query=None):
-        if field == 'artist':
+        if field == 'track':
+            def distinct(track):
+                return {track.name}
+        elif field == 'artist':
             def distinct(track):
                 return {a.name for a in track.artists}
         elif field == 'albumartist':
@@ -171,7 +174,7 @@ class JsonLibrary(local.Library):
         search_result = search.search(self._tracks.values(), query, limit=None)
         for track in search_result.tracks:
             distinct_result.update(distinct(track))
-        return distinct_result
+        return distinct_result - {None}
 
     def search(self, query=None, limit=100, offset=0, uris=None, exact=False):
         tracks = self._tracks.values()

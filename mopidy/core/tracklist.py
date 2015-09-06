@@ -3,6 +3,7 @@ from __future__ import absolute_import, unicode_literals
 import logging
 import random
 
+from mopidy import exceptions
 from mopidy.core import listener
 from mopidy.internal import deprecation, validation
 from mopidy.models import TlTrack, Track
@@ -213,8 +214,8 @@ class TracklistController(object):
         :type tlid: :class:`int` or :class:`None`
         :rtype: :class:`int` or :class:`None`
 
-        .. versionchanged:: 1.1
-            Added the *tlid* parameter
+        .. versionadded:: 1.1
+            The *tlid* parameter
         """
         tl_track is None or validation.check_instance(tl_track, TlTrack)
         tlid is None or validation.check_integer(tlid, min=0)
@@ -431,8 +432,13 @@ class TracklistController(object):
                 tracks.extend(track_map[uri])
 
         tl_tracks = []
+        max_length = self.core._config['core']['max_tracklist_length']
 
         for track in tracks:
+            if self.get_length() >= max_length:
+                raise exceptions.TracklistFull(
+                    'Tracklist may contain at most %d tracks.' % max_length)
+
             tl_track = TlTrack(self._next_tlid, track)
             self._next_tlid += 1
             if at_position is not None:
@@ -548,7 +554,7 @@ class TracklistController(object):
         :rtype: list of :class:`mopidy.models.TlTrack` that was removed
 
         .. deprecated:: 1.1
-            Providing the criteria  via ``kwargs`` is no longer supported.
+            Providing the criteria  via ``kwargs``.
         """
         if kwargs:
             deprecation.warn('core.tracklist.remove:kwargs_criteria')

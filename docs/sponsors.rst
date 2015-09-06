@@ -20,19 +20,21 @@ for free. We use their services for the following sites:
 
 - Mailgun for sending emails from the Discourse forum.
 
-- Hosting of the Jenkins CI server at https://ci.mopidy.com.
 
-- Hosting of a Linux worker for https://ci.mopidy.com.
+Fastly
+======
 
-- Hosting of a Windows worker for https://ci.mopidy.com.
+`Fastly <https://www.fastly.com/>`_ lets Mopidy use their CDN for free. We
+accelerate requests to all Mopidy services, including:
 
-- CDN hosting at http://dl.mopidy.com, which is used to distribute Pi Musicbox
+- https://apt.mopidy.com/dists/, which is used to distribute Debian packages.
+
+- https://dl.mopidy.com/pimusicbox/, which is used to distribute Pi Musicbox
   images.
 
 
 GlobalSign
 ==========
 
-`GlobalSign <https://www.globalsign.com/>`_ provides Mopidy with a free
-wildcard SSL certificate for mopidy.com, which we use to secure access to all
-our web sites.
+`GlobalSign <https://www.globalsign.com/>`_ provides Mopidy with a free SSL
+certificate for mopidy.com, which we use to secure access to all our web sites.

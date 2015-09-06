@@ -31,6 +31,9 @@ class BaseTestCase(unittest.TestCase):
 
     def get_config(self):
         return {
+            'core': {
+                'max_tracklist_length': 10000
+            },
             'mpd': {
                 'password': None,
                 'default_playlist_scheme': 'dummy',
@@ -46,7 +49,9 @@ class BaseTestCase(unittest.TestCase):
 
         with deprecation.ignore():
             self.core = core.Core.start(
-                mixer=self.mixer, backends=[self.backend]).proxy()
+                self.get_config(),
+                mixer=self.mixer,
+                backends=[self.backend]).proxy()
 
         self.uri_map = uri_mapper.MpdUriMapper(self.core)
         self.connection = MockConnection()

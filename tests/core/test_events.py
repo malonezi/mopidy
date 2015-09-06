@@ -17,12 +17,19 @@ from tests import dummy_backend
 class BackendEventsTest(unittest.TestCase):
 
     def setUp(self):  # noqa: N802
+        config = {
+            'core': {
+                'max_tracklist_length': 10000,
+            }
+        }
+
         self.backend = dummy_backend.create_proxy()
         self.backend.library.dummy_library = [
             Track(uri='dummy:a'), Track(uri='dummy:b')]
 
         with deprecation.ignore():
-            self.core = core.Core.start(backends=[self.backend]).proxy()
+            self.core = core.Core.start(
+                config, backends=[self.backend]).proxy()
 
     def tearDown(self):  # noqa: N802
         pykka.ActorRegistry.stop_all()
@@ -92,12 +99,11 @@ class BackendEventsTest(unittest.TestCase):
 
         self.assertEqual(send.call_args[0][0], 'playlist_changed')
 
-    def test_playlists_delete_sends_playlist_changed_event(self, send):
+    def test_playlists_delete_sends_playlist_deleted_event(self, send):
         playlist = self.core.playlists.create('foo').get()
-
         self.core.playlists.delete(playlist.uri).get()
 
-        self.assertEqual(send.call_args[0][0], 'playlist_changed')
+        self.assertEqual(send.call_args[0][0], 'playlist_deleted')
 
     def test_playlists_save_sends_playlist_changed_event(self, send):
         playlist = self.core.playlists.create('foo').get()

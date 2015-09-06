@@ -1,6 +1,11 @@
 from __future__ import absolute_import, unicode_literals
 
+import logging
+
 from mopidy import listener, models
+
+
+logger = logging.getLogger(__name__)
 
 
 class Backend(object):
@@ -103,6 +108,9 @@ class LibraryProvider(object):
         *MAY be implemented by subclass.*
 
         Default implementation will simply return an empty set.
+
+        Note that backends should always return an empty set for unexpected
+        field types.
         """
         return set()
 
@@ -235,6 +243,9 @@ class PlaybackProvider(object):
         :rtype: :class:`True` if successful, else :class:`False`
         """
         uri = self.translate_uri(track.uri)
+        if uri != track.uri:
+            logger.debug(
+                'Backend translated URI from %s to %s', track.uri, uri)
         if not uri:
             return False
         self.audio.set_uri(uri).get()
